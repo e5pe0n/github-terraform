@@ -22,6 +22,9 @@ locals {
     gim = {
       required_status_checks = []
     }
+    shushu = {
+      required_status_checks = ["check"]
+    }
   }
 }
 
