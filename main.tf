@@ -23,7 +23,7 @@ locals {
       required_status_checks = []
     }
     shushu = {
-      required_status_checks = ["check"]
+      required_status_checks = ["backend", "frontend"]
     }
   }
 }
