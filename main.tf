@@ -15,23 +15,44 @@ provider "github" {
 }
 
 locals {
-  repos = {
+  # Public repos get git-flow branch rulesets, which GitHub Free does not offer on private repos.
+  public_repos = {
     stden = {
       required_status_checks = ["check"]
     }
     gim = {
       required_status_checks = []
     }
+  }
+
+  private_repos = {
     shushu = {
-      required_status_checks = ["backend", "frontend"]
+      gitflow = true
+    }
+    infra = {
+      gitflow = false
     }
   }
+
+  repos = merge(
+    { for name, _ in local.public_repos : name => { visibility = "public", gitflow = true } },
+    { for name, repo in local.private_repos : name => { visibility = "private", gitflow = repo.gitflow } },
+  )
 }
 
 module "repo" {
   source   = "./modules/repo"
   for_each = local.repos
 
-  name                   = each.key
+  name       = each.key
+  visibility = each.value.visibility
+  gitflow    = each.value.gitflow
+}
+
+module "branch_rulesets" {
+  source   = "./modules/branch_rulesets"
+  for_each = local.public_repos
+
+  repository             = module.repo[each.key].name
   required_status_checks = each.value.required_status_checks
 }

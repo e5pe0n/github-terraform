@@ -9,12 +9,18 @@ variable "description" {
   default     = null
 }
 
-variable "required_status_checks" {
-  description = "Status check contexts (GitHub Actions job names) required on develop and main."
-  type        = list(string)
-  default     = []
+variable "visibility" {
+  description = "Repository visibility: public or private."
+  type        = string
+
+  validation {
+    condition     = contains(["public", "private"], var.visibility)
+    error_message = "visibility must be \"public\" or \"private\"."
+  }
 }
 
-locals {
-  github_actions_app_id = 15368
+variable "gitflow" {
+  description = "Use develop as the default branch with main as the release branch. When false, main is the default branch."
+  type        = bool
+  default     = true
 }
