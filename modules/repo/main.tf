@@ -9,7 +9,7 @@ terraform {
 resource "github_repository" "this" {
   name        = var.name
   description = var.description
-  visibility  = "public"
+  visibility  = var.visibility
 
   has_issues      = false
   has_projects    = true
@@ -28,12 +28,16 @@ resource "github_repository" "this" {
   squash_merge_commit_message = "COMMIT_MESSAGES"
   web_commit_signoff_required = false
 
-  security_and_analysis {
-    secret_scanning {
-      status = "enabled"
-    }
-    secret_scanning_push_protection {
-      status = "enabled"
+  # Secret scanning is only available on public repos without GitHub Advanced Security.
+  dynamic "security_and_analysis" {
+    for_each = var.visibility == "public" ? [1] : []
+    content {
+      secret_scanning {
+        status = "enabled"
+      }
+      secret_scanning_push_protection {
+        status = "enabled"
+      }
     }
   }
 
@@ -71,6 +75,8 @@ resource "github_workflow_repository_permissions" "this" {
 
 # Git-flow style: develop is the default branch, main is the release branch.
 resource "github_branch" "develop" {
+  count = var.gitflow ? 1 : 0
+
   repository    = github_repository.this.name
   branch        = "develop"
   source_branch = "main"
@@ -82,52 +88,5 @@ resource "github_branch" "develop" {
 
 resource "github_branch_default" "this" {
   repository = github_repository.this.name
-  branch     = github_branch.develop.branch
-}
-
-locals {
-  # branch => whether required status checks must run against the latest base
-  protected_branches = {
-    develop = false
-    main    = true
-  }
-}
-
-resource "github_repository_ruleset" "branch" {
-  for_each = local.protected_branches
-
-  repository  = github_repository.this.name
-  name        = each.key
-  target      = "branch"
-  enforcement = "active"
-
-  conditions {
-    ref_name {
-      include = ["refs/heads/${each.key}"]
-      exclude = []
-    }
-  }
-
-  rules {
-    deletion         = true
-    non_fast_forward = true
-
-    dynamic "required_status_checks" {
-      for_each = length(var.required_status_checks) > 0 ? [1] : []
-      content {
-        strict_required_status_checks_policy = each.value
-        do_not_enforce_on_create             = false
-
-        dynamic "required_check" {
-          for_each = var.required_status_checks
-          content {
-            context        = required_check.value
-            integration_id = local.github_actions_app_id
-          }
-        }
-      }
-    }
-  }
-
-  depends_on = [github_branch.develop]
+  branch     = var.gitflow ? github_branch.develop[0].branch : "main"
 }

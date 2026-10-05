@@ -40,16 +40,16 @@ import {
 # Resources that only exist on some repos.
 
 import {
-  to = module.repo["stden"].github_branch.develop
+  to = module.repo["stden"].github_branch.develop[0]
   id = "stden:develop"
 }
 
 import {
-  to = module.repo["stden"].github_repository_ruleset.branch["develop"]
+  to = module.branch_rulesets["stden"].github_repository_ruleset.branch["develop"]
   id = "stden:22318824"
 }
 
 import {
-  to = module.repo["stden"].github_repository_ruleset.branch["main"]
+  to = module.branch_rulesets["stden"].github_repository_ruleset.branch["main"]
   id = "stden:22318852"
 }
